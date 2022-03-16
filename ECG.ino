@@ -1,8 +1,18 @@
-// This Arduino code is written for MaM Sense Board ECG output. For more info visit: https://mamhightech.com/MamSense.html
+// This Arduino/ESP32 code is written for MaM Sense Board ECG output. For more info visit: https://mamhightech.com/MamSense.html
 // The program measures the heart rate and sends it to serial communication.
 
 const short Fs = 250;    // Sampling frequency(Hz)
 const int   Ts = 1e6/Fs;  // Sampling period (us)
+
+//ADC configuration
+const byte adc_in = A2; // ADC input pin.(For example A2 for Arduino Uno, 27 for ESP32)
+const byte adc_bits = 10; // The resolution of your MCU's ADC
+const byte default_bits = 10; // Don't change!
+const float vref = 5; // Reference voltage of your MCU's ADC (V)
+const float default_vref = 5 ;// Default reference voltage of the Arduino Uno (V) Don't Change
+const float adc_scale = pow(2,default_bits-adc_bits)*vref/default_vref; // Scales the input signal
+const float ecg_offset = 1.75; // DC offset of the Mam Sense Board ECG output. (V)
+const float sig_offset = round(pow(2,default_bits)*ecg_offset/default_vref);
 
 //Create the coefficient matrices for low pass filter at 35 Hz.
 const float nm[7] = {0.00086, 0.00515, 0.01286,  0.01715,  0.01286,  0.00515, 0.00086};         
@@ -33,8 +43,7 @@ void loop() {
   if(current_time - start_time>= Ts){
  
     start_time = current_time;
-//    Serial.println(start_time);
-    raw[cnt%200] = analogRead(A2)-350;
+    raw[cnt%200] = round( analogRead(adc_in)*adc_scale-sig_offset);
     // Filter the raw signal with LPF
     ecg[cnt%200] = round( raw[cnt%200]*nm[0] +raw[(cnt-1)%200]*nm[1] +raw[(cnt-2)%200]*nm[2] +raw[(cnt-3)%200]*nm[3] +raw[(cnt-4)%200]*nm[4] +raw[(cnt-5)%200]*nm[5]+raw[(cnt-6)%200]*nm[6]-ecg[(cnt-1)%200]*dn[1] -ecg[(cnt-2)%200]*dn[2] -ecg[(cnt-3)%200]*dn[3] -ecg[(cnt-4)%200]*dn[4] -ecg[(cnt-5)%200]*dn[5] -ecg[(cnt-6)%200]*dn[6] );
  
