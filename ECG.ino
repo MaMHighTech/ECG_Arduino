@@ -37,7 +37,6 @@ start_time = micros();
 }
 
 void loop() {
-  
   current_time = micros();
   
   if(current_time - start_time>= Ts){
